@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  namespace: redis
+  name: statefulset-default-toutiao-videoarch-redis
+  labels:
+    app: statefulset-default-toutiao-videoarch-redis
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      psm: toutiao.videoarch.redis
+  serviceName: redis # 选择服务的名字一定要对应，否则不同pod间容器之间无法通信
+  template:
+    metadata:
+      labels:
+        psm: toutiao.videoarch.redis
+        app: toutiao.videoarch.redis
+        anti-affinity-provider: toutiao.videoarch.redis
+        cluster: default
+    spec:
+      initContainers:
+        - name: init-redis
+          image: redis:6.2.3-alpine
+          command:
+            - sh
+            - "-c"
+            - |
+              set -ex
+              s=`hostname`
+              ordinal=${s: -1}
+              if [[ $ordinal -eq 0 ]]; then
+                cp /etc/redis/redis.conf /etc/redis.conf
+              else
+                cp /etc/redis/redis.conf /etc/redis.conf
+                S=`hostname -f | sed 's/redis-[0-9]\+/redis-0/'`
+                echo "slaveof $S 6379" >> /etc/redis.conf
+              fi
+          volumeMounts:
+            - name: empty-dir
+              mountPath: /etc
+              subPath: redis.conf
+            - name: config
+              mountPath: /etc/redis
+      containers:
+        - name: toutiao-videoarch-redis
+          image: redis:6.2.3-alpine
+          imagePullPolicy: IfNotPresent
+          command: [ "redis-server" ]
+          args: [ "/etc/redis.conf" ]
+          ports:
+            - containerPort: 6379
+          livenessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            initialDelaySeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            initialDelaySeconds: 5
+            timeoutSeconds: 1
+          volumeMounts:
+            - name: empty-dir # 使用empty-dir可以挂载保存redis.conf文件
+              mountPath: /etc
+              subPath: redis.conf
+            - name: data-master
+              mountPath: /data/master
+            - name: data-slave
+              mountPath: /data/slave
+      volumes:
+        - name: config
+          configMap:
+            items:
+              - key: redis.conf
+                path: "redis.conf"
+            name: redis-config
+        - name: empty-dir
+          emptyDir: { }
+        - name: data-master
+          persistentVolumeClaim:
+            claimName: vop-redis-pvc1
+        - name: data-slave
+          persistentVolumeClaim:
+            claimName: vop-redis-pvc2
+      restartPolicy: Always
+
+
+

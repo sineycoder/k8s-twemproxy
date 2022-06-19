@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  namespace: redis
+  name: vop-redis-pv1
+  labels:
+    app: vop-redis-pv1
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain # 默认为retain
+  storageClassName: ""
+  hostPath:
+    path: /Users/bytedance1/k8s/redis-storage1
+  # pv只有节点亲和性
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/os
+              operator: In
+              values:
+                - linux
+
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  namespace: redis
+  name: vop-redis-pv2
+  labels:
+    app: vop-redis-pv2
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain # 默认为retain
+  storageClassName: ""
+  hostPath:
+    path: /Users/bytedance1/k8s/redis-storage1
+  #    pv只有节点亲和性
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/os
+              operator: In
+              values:
+                - linux
+
+
+              
