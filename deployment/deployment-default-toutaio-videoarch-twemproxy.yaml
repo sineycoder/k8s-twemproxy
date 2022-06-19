@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: redis
+  name: deployment-default-toutiao-videoarch-twemproxy
+  labels:
+    app: deployment-default-toutiao-videoarch-twemproxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      psm: toutiao.videoarch.twemproxy
+  template:
+    metadata:
+      labels:
+        psm: toutiao.videoarch.twemproxy
+        app: toutiao.videoarch.twemproxy
+        anti-affinity-provider: toutiao.videoarch.twemproxy
+        cluster: default
+    spec:
+      hostname: twemproxy-0
+      containers:
+        - name: toutiao-videoarch-twemproxy
+          image: sineycoder/twemproxy:v0.5.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 22121
+            - containerPort: 22122
+          #          command: ["/bin/bash", "-c", "tail -f /dev/null"]
+          command: [ "/twemproxy/twemproxy-0.5.0/src/nutcracker" ]
+          args: [ "-c", "/twemproxy/conf/twemproxy-redis.yaml", "-o", "/twemproxy/out.log", "-v", "11" ]
+          volumeMounts:
+            - name: config
+              mountPath: /twemproxy/conf
+      volumes:
+        - name: config
+          configMap:
+            items:
+              - key: twemproxy-redis.yaml
+                path: "twemproxy-redis.yaml"
+            name: twemproxy-config
+      restartPolicy: Always
+

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: redis
+  name: twemproxy
+spec:
+  selector:
+    psm: toutiao.videoarch.twemproxy
+  ports:
+    - port: 22121
+      targetPort: 22121
+      name: proxy-slave
+    - port: 22122
+      targetPort: 22122
+      name: proxy-master
+  type: NodePort
